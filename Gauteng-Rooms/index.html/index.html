@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gauteng Rooms 🏠</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* ── Custom range slider styling ── */
+    input[type='range'] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type='range']::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #2563eb;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    input[type='range']::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #2563eb;
+      cursor: pointer;
+      border: 2px solid white;
+    }
+
+    /* ── Card hover animation ── */
+    .card-hover {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+    }
+
+    /* ── Modal backdrop blur ── */
+    .modal-backdrop {
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* ── Smooth modal animation ── */
+    .modal-enter {
+      animation: modalIn 0.25s ease forwards;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);     }
+    }
+
+    /* ── Toast notification ── */
+    .toast-enter {
+      animation: toastIn 0.3s ease forwards;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+  </style>
+
+  <script>
+    /* ── Tailwind brand colour config ── */
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 1 — SEED DATA
+       12 hardcoded listings used as the starting dataset.
+       When the app loads, we merge these with any saved in
+       localStorage so user-added listings are never lost.
+    ═══════════════════════════════════════════════════════════ */
+    const SEED_ROOMS = [
+      { id: 1,  title: "Cosy Bachelor Flat",        location: "Soshanguve",            price: 1800,  status: "Available", whatsappNumber: "27711234001", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&q=80" },
+      { id: 2,  title: "Modern Studio Room",         location: "Tembisa",               price: 3200,  status: "Available", whatsappNumber: "27711234002", imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80" },
+      { id: 3,  title: "Spacious 2-Bedroom",         location: "Sandton",               price: 18500, status: "Occupied",  whatsappNumber: "27711234003", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80" },
+      { id: 4,  title: "Garden Cottage",             location: "Mamelodi",              price: 2500,  status: "Available", whatsappNumber: "27711234004", imageUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600&q=80" },
+      { id: 5,  title: "Executive Apartment",        location: "Midrand",               price: 12000, status: "Pending",   whatsappNumber: "27711234005", imageUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&q=80" },
+      { id: 6,  title: "Affordable Single Room",     location: "Katlehong",             price: 950,   status: "Available", whatsappNumber: "27711234006", imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80" },
+      { id: 7,  title: "Trendy Loft",                location: "Maboneng, Johannesburg",price: 9500,  status: "Available", whatsappNumber: "27711234007", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=600&q=80" },
+      { id: 8,  title: "Family Home — 3 Bed",        location: "Pretoria West",         price: 7800,  status: "Pending",   whatsappNumber: "27711234008", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" },
+      { id: 9,  title: "Neat Room — Bills Incl.",    location: "Soweto",                price: 1500,  status: "Available", whatsappNumber: "27711234009", imageUrl: "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?w=600&q=80" },
+      { id: 10, title: "Luxury Penthouse",           location: "Rosebank",              price: 28000, status: "Available", whatsappNumber: "27711234010", imageUrl: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80" },
+      { id: 11, title: "Compact Granny Flat",        location: "Vosloorus",             price: 2100,  status: "Occupied",  whatsappNumber: "27711234011", imageUrl: "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=600&q=80" },
+      { id: 12, title: "Student Room Near Campus",   location: "Hatfield, Pretoria",    price: 3800,  status: "Available", whatsappNumber: "27711234012", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=600&q=80" },
+    ];
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 2 — DATA LAYER (localStorage helpers)
+       These functions act as a simple "database" layer.
+       Later you can swap localStorage calls for Firebase/Supabase
+       API calls inside these exact functions — no UI changes needed.
+    ═══════════════════════════════════════════════════════════ */
+
+    /**
+     * loadListings()
+     * Reads saved user-added listings from localStorage,
+     * then merges them AFTER the seed data.
+     * Returns the full combined array.
+     */
+    function loadListings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("gr_listings") || "[]");
+        // Merge seed data + user listings (avoid duplicates by id)
+        const seedIds = new Set(SEED_ROOMS.map(r => r.id));
+        const userOnly = saved.filter(r => !seedIds.has(r.id));
+        return [...SEED_ROOMS, ...userOnly];
+      } catch {
+        return [...SEED_ROOMS];
+      }
+    }
+
+    /**
+     * saveListings(listings)
+     * Saves ONLY the user-added listings to localStorage
+     * (seed data is always in code, no need to save it).
+     * FUTURE: replace body with an API POST/PUT call.
+     */
+    function saveListings(listings) {
+      const seedIds = new Set(SEED_ROOMS.map(r => r.id));
+      const userOnly = listings.filter(r => !seedIds.has(r.id));
+      localStorage.setItem("gr_listings", JSON.stringify(userOnly));
+    }
+
+    /**
+     * addListing(listings, newListing)
+     * Pure function — returns a new array with the listing appended.
+     * Also persists to localStorage.
+     * FUTURE: replace saveListings() with an API call here.
+     */
+    function addListing(listings, newListing) {
+      const updated = [...listings, newListing];
+      saveListings(updated);
+      return updated;
+    }
+
+    /**
+     * filterListings(listings, { search, maxPrice, onlyAvailable })
+     * Pure filter function — no side effects.
+     * Easy to unit-test and swap for a server-side query later.
+     */
+    function filterListings(listings, { search, maxPrice, onlyAvailable }) {
+      const term = search.toLowerCase().trim();
+      return listings.filter((room) => {
+        // Partial, case-insensitive location + title search
+        const haystack = `${room.location} ${room.title}`.toLowerCase();
+        const matchSearch   = term === "" || haystack.includes(term);
+        const matchPrice    = room.price <= maxPrice;
+        const matchStatus   = onlyAvailable ? room.status === "Available" : true;
+        return matchSearch && matchPrice && matchStatus;
+      });
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 3 — AUTH LAYER (localStorage, no backend yet)
+       Swap these functions for real JWT/Firebase auth later.
+    ═══════════════════════════════════════════════════════════ */
+
+    /**
+     * getUsers() — returns array of registered users from localStorage.
+     * FUTURE: replace with GET /api/users or Firebase Auth.
+     */
+    function getUsers() {
+      try { return JSON.parse(localStorage.getItem("gr_users") || "[]"); }
+      catch { return []; }
+    }
+
+    /**
+     * saveUsers(users) — persists user array to localStorage.
+     * FUTURE: replace with POST /api/register or Firebase createUser.
+     */
+    function saveUsers(users) {
+      localStorage.setItem("gr_users", JSON.stringify(users));
+    }
+
+    /**
+     * getCurrentUser() — returns the currently logged-in user object or null.
+     * FUTURE: replace with Firebase onAuthStateChanged or JWT decode.
+     */
+    function getCurrentUser() {
+      try { return JSON.parse(localStorage.getItem("gr_current_user") || "null"); }
+      catch { return null; }
+    }
+
+    /**
+     * loginUser(user) — persists session.
+     * FUTURE: replace with storing a JWT token from your backend.
+     */
+    function loginUser(user) {
+      localStorage.setItem("gr_current_user", JSON.stringify(user));
+    }
+
+    /**
+     * logoutUser() — clears session.
+     * FUTURE: call Firebase signOut() or invalidate JWT here.
+     */
+    function logoutUser() {
+      localStorage.removeItem("gr_current_user");
+    }
+
+    /**
+     * registerUser(email, password)
+     * Returns { success: true, user } or { success: false, error: "..." }
+     * FUTURE: replace with Firebase createUserWithEmailAndPassword().
+     */
+    function registerUser(email, password) {
+      const users = getUsers();
+      if (users.find(u => u.email === email)) {
+        return { success: false, error: "An account with this email already exists." };
+      }
+      // NOTE: In production NEVER store plain-text passwords.
+      // Use bcrypt on the backend or Firebase Auth.
+      const user = { id: Date.now(), email, password };
+      saveUsers([...users, user]);
+      return { success: true, user };
+    }
+
+    /**
+     * attemptLogin(email, password)
+     * Returns { success: true, user } or { success: false, error: "..." }
+     * FUTURE: replace with Firebase signInWithEmailAndPassword().
+     */
+    function attemptLogin(email, password) {
+      const users = getUsers();
+      const user  = users.find(u => u.email === email && u.password === password);
+      if (!user) return { success: false, error: "Invalid email or password." };
+      return { success: true, user };
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 4 — HELPERS / CONSTANTS
+    ═══════════════════════════════════════════════════════════ */
+
+    /** Formats a number as South African Rand, e.g. 3500 → "R3,500" */
+    const formatRand = (amount) => `R${Number(amount).toLocaleString('en-ZA')}`;
+
+    const STATUS_STYLES = {
+      Available: "bg-emerald-100 text-emerald-700 border border-emerald-300",
+      Pending:   "bg-amber-100  text-amber-700  border border-amber-300",
+      Occupied:  "bg-rose-100   text-rose-700   border border-rose-300",
+    };
+    const STATUS_DOT = {
+      Available: "bg-emerald-500",
+      Pending:   "bg-amber-500",
+      Occupied:  "bg-rose-500",
+    };
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 5 — TOAST NOTIFICATION COMPONENT
+       A lightweight, auto-dismissing notification popup.
+    ═══════════════════════════════════════════════════════════ */
+    function Toast({ message, type = "success", onClose }) {
+      // Auto-dismiss after 3 seconds
+      React.useEffect(() => {
+        const t = setTimeout(onClose, 3000);
+        return () => clearTimeout(t);
+      }, [onClose]);
+
+      const colours = {
+        success: "bg-emerald-600",
+        error:   "bg-rose-600",
+        info:    "bg-brand-600",
+      };
+
+      return (
+        <div className={`toast-enter fixed bottom-6 left-1/2 -translate-x-1/2 z-50
+          ${colours[type]} text-white px-5 py-3 rounded-2xl shadow-2xl 
+          flex items-center gap-3 text-sm font-medium max-w-sm w-[90vw]`}>
+          {/* Icon */}
+          {type === "success" && <span className="text-lg">✅</span>}
+          {type === "error"   && <span className="text-lg">❌</span>}
+          {type === "info"    && <span className="text-lg">ℹ️</span>}
+          <span className="flex-1">{message}</span>
+          <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">×</button>
+        </div>
+      );
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 6 — AUTH MODAL COMPONENT
+       Handles both Sign Up and Log In in a single modal.
+       Switches between modes with a tab button.
+    ═══════════════════════════════════════════════════════════ */
+    function AuthModal({ onClose, onAuthSuccess, showToast }) {
+      // "login" or "signup" mode
+      const [mode, setMode]           = React.useState("login");
+      const [email, setEmail]         = React.useState("");
+      const [password, setPassword]   = React.useState("");
+      const [confirm, setConfirm]     = React.useState("");
+      const [error, setError]         = React.useState("");
+      const [loading, setLoading]     = React.useState(false);
+
+      // Clear error when switching modes
+      const switchMode = (m) => { setMode(m); setError(""); setEmail(""); setPassword(""); setConfirm(""); };
+
+      /** Basic form validation before hitting the auth layer */
+      function validate() {
+        if (!email.trim())    return "Email is required.";
+        if (!/\S+@\S+\.\S+/.test(email)) return "Enter a valid email address.";
+        if (!password)        return "Password is required.";
+        if (password.length < 6) return "Password must be at least 6 characters.";
+        if (mode === "signup" && password !== confirm) return "Passwords do not match.";
+        return null;
+      }
+
+      function handleSubmit(e) {
+        e.preventDefault();
+        setError("");
+        const validationError = validate();
+        if (validationError) { setError(validationError); return; }
+
+        setLoading(true);
+
+        // Small timeout simulates async — replace with real async call later
+        setTimeout(() => {
+          let result;
+          if (mode === "signup") {
+            result = registerUser(email.trim(), password);
+            if (result.success) {
+              loginUser(result.user);
+              showToast("Account created! Welcome to Gauteng Rooms 🎉", "success");
+              onAuthSuccess(result.user);
+            }
+          } else {
+            result = attemptLogin(email.trim(), password);
+            if (result.success) {
+              loginUser(result.user);
+              showToast(`Welcome back, ${result.user.email}! 👋`, "success");
+              onAuthSuccess(result.user);
+            }
+          }
+          if (!result.success) { setError(result.error); }
+          setLoading(false);
+        }, 400);
+      }
+
+      return (
+        /* ── Backdrop ── */
+        <div
+          className="modal-backdrop fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          <div className="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+
+            {/* Header */}
+            <div className="bg-brand-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-white font-bold text-lg">
+                {mode === "login" ? "🔑 Log In" : "📝 Create Account"}
+              </h2>
+              <button onClick={onClose} className="text-blue-300 hover:text-white text-2xl leading-none">×</button>
+            </div>
+
+            {/* Mode Tabs */}
+            <div className="flex border-b border-slate-200">
+              {["login","signup"].map(m => (
+                <button
+                  key={m}
+                  onClick={() => switchMode(m)}
+                  className={`flex-1 py-3 text-sm font-semibold transition-all
+                    ${mode === m
+                      ? "border-b-2 border-brand-600 text-brand-700"
+                      : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                  {m === "login" ? "Log In" : "Sign Up"}
+                </button>
+              ))}
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+
+              {/* Error banner */}
+              {error && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-2.5 rounded-xl">
+                  {error}
+                </div>
+              )}
+
+              {/* Email */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Password */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Password</label>
+                <input
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Confirm Password (Sign Up only) */}
+              {mode === "signup" && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Confirm Password</label>
+                  <input
+                    type="password"
+                    placeholder="Repeat your password"
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition-all
+                  active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading
+                  ? "Please wait…"
+                  : mode === "login" ? "Log In" : "Create Account"
+                }
+              </button>
+
+              {/* Switch mode link */}
+              <p className="text-center text-xs text-gray-500">
+                {mode === "login"
+                  ? <>Don't have an account? <button type="button" onClick={() => switchMode("signup")} className="text-brand-600 font-semibold hover:underline">Sign Up</button></>
+                  : <>Already have an account? <button type="button" onClick={() => switchMode("login")} className="text-brand-600 font-semibold hover:underline">Log In</button></>
+                }
+              </p>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 7 — ADD LISTING MODAL COMPONENT
+       Only rendered when a logged-in user clicks "+ List Your Room".
+       Submits to addListing() in the data layer.
+    ═══════════════════════════════════════════════════════════ */
+    function AddListingModal({ onClose, onAdd, showToast }) {
+
+      // Form field state
+      const [form, setForm] = React.useState({
+        title:           "",
+        location:        "",
+        price:           "",
+        status:          "Available",
+        whatsappNumber:  "",
+        imageUrl:        "",
+      });
+      const [errors, setErrors] = React.useState({});
+      const [loading, setLoading] = React.useState(false);
+
+      /** Update a single form field */
+      const update = (field, value) => {
+        setForm(prev => ({ ...prev, [field]: value }));
+        // Clear the error for that field as user types
+        setErrors(prev => ({ ...prev, [field]: "" }));
+      };
+
+      /** Validate all fields — returns an errors object */
+      function validateForm() {
+        const e = {};
+        if (!form.title.trim())          e.title          = "Title is required.";
+        if (!form.location.trim())       e.location       = "Location is required.";
+        if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0)
+                                         e.price          = "Enter a valid price (e.g. 2500).";
+        if (!form.whatsappNumber.trim()) e.whatsappNumber = "WhatsApp number is required.";
+        else if (!/^\d{10,15}$/.test(form.whatsappNumber.replace(/\s/g,"")))
+                                         e.whatsappNumber = "Use digits only, 10–15 characters (e.g. 27711234567).";
+        // Image URL is optional — we fall back to a placeholder
+        return e;
+      }
+
+      function handleSubmit(e) {
+        e.preventDefault();
+        const errs = validateForm();
+        if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
+        setLoading(true);
+        setTimeout(() => {
+          // Build the new listing object matching SEED_ROOMS shape
+          const newListing = {
+            id:              Date.now(),          // unique id
+            title:           form.title.trim(),
+            location:        form.location.trim(),
+            price:           Number(form.price),
+            status:          form.status,
+            whatsappNumber:  form.whatsappNumber.replace(/\s/g, ""),
+            // Fall back to placeholder if no image supplied
+            imageUrl:        form.imageUrl.trim() ||
+              "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
+          };
+
+          onAdd(newListing);       // bubble up to App state
+          showToast("🏠 Your listing has been added!", "success");
+          setLoading(false);
+          onClose();
+        }, 400);
+      }
+
+      /** Reusable input field with inline error display */
+      const Field = ({ label, children, error }) => (
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>
+          {children}
+          {error && <p className="text-rose-500 text-xs mt-0.5">{error}</p>}
+        </div>
+      );
+
+      return (
+        <div
+          className="modal-backdrop fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          <div className="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+
+            {/* Header */}
+            <div className="bg-brand-700 px-6 py-4 flex items-center justify-between shrink-0">
+              <h2 className="text-white font-bold text-lg">🏠 List Your Room</h2>
+              <button onClick={onClose} className="text-blue-300 hover:text-white text-2xl leading-none">×</button>
+            </div>
+
+            {/* Scrollable form body */}
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 overflow-y-auto">
+
+              {/* Title */}
+              <Field label="Listing Title *" error={errors.title}>
+                <input
+                  type="text"
+                  placeholder="e.g. Cosy Bachelor Flat"
+                  value={form.title}
+                  onChange={e => update("title", e.target.value)}
+                  className={`border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
+                    ${errors.title ? "border-rose-400" : "border-slate-300"}`}
+                />
+              </Field>
+
+              {/* Location */}
+              <Field label="Location (Gauteng area) *" error={errors.location}>
+                <input
+                  type="text"
+                  placeholder="e.g. Soweto, Alexandra, Centurion"
+                  value={form.location}
+                  onChange={e => update("location", e.target.value)}
+                  className={`border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
+                    ${errors.location ? "border-rose-400" : "border-slate-300"}`}
+                />
+              </Field>
+
+              {/* Price */}
+              <Field label="Monthly Rent (R) *" error={errors.price}>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">R</span>
+                  <input
+                    type="number"
+                    placeholder="e.g. 2500"
+                    min="1"
+                    value={form.price}
+                    onChange={e => update("price", e.target.value)}
+                    className={`border rounded-xl pl-8 pr-4 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500
+                      ${errors.price ? "border-rose-400" : "border-slate-300"}`}
+                                    />
+                </div>
+              </Field>
+
+              {/* Status */}
+              <Field label="Status *" error={errors.status}>
+                <select
+                  value={form.status}
+                  onChange={e => update("status", e.target.value)}
+                  className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                >
+                  <option value="Available">Available</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Occupied">Occupied</option>
+                </select>
+              </Field>
+
+              {/* WhatsApp Number */}
+              <Field label="WhatsApp Number *" error={errors.whatsappNumber}>
+                <input
+                  type="text"
+                  placeholder="e.g. 27711234567 (digits only)"
+                  value={form.whatsappNumber}
+                  onChange={e => update("whatsappNumber", e.target.value)}
+                  className={`border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
+                    ${errors.whatsappNumber ? "border-rose-400" : "border-slate-300"}`}
+                />
+              </Field>
+
+              {/* Image URL (optional) */}
+              <Field label="Image URL (optional)" error={errors.imageUrl}>
+                <input
+                  type="text"
+                  placeholder="https://... (leave blank for default image)"
+                  value={form.imageUrl}
+                  onChange={e => update("imageUrl", e.target.value)}
+                  className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </Field>
+
+              {/* Live price preview */}
+              {form.price && !isNaN(Number(form.price)) && Number(form.price) > 0 && (
+                <div className="bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 text-sm text-brand-700 font-semibold">
+                  💰 Rent preview: <span className="text-brand-900">{formatRand(Number(form.price))}/month</span>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl
+                  transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                                        Adding Listing...
+
+                  </>
+                ) : (
+                  <>🏠 Add Listing</>
+                )}
+              </button>
+
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 8 — ROOMCARD COMPONENT
+       Unchanged from original design — extended only with
+       a subtle "user-added" badge for new listings.
+    ═══════════════════════════════════════════════════════════ */
+    function RoomCard({ room }) {
+      const { title, location, price, status, whatsappNumber, imageUrl, id } = room;
+
+      // Check if this is a user-added listing (id is a timestamp, not 1–12)
+      const isUserAdded = id > 12;
+
+      const whatsappMessage = encodeURIComponent(
+        `Hi! I saw your listing for "${title}" in ${location} at ${formatRand(price)}/month on Gauteng Rooms. Is it still available?`
+      );
+      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+
+      return (
+        <div className="card-hover bg-white rounded-2xl overflow-hidden shadow-md flex flex-col">
+
+          {/* ── Image ── */}
+          <div className="relative h-48 overflow-hidden">
+            <img
+              src={imageUrl}
+              alt={title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/600x400?text=No+Image";
+              }}
+            />
+
+            {/* Price Badge */}
+            <div className="absolute top-3 left-3 bg-brand-600 text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg">
+              {formatRand(price)}<span className="font-normal text-blue-200">/mo</span>
+            </div>
+
+            {/* User-added badge — only shows on newly added listings */}
+            {isUserAdded && (
+              <div className="absolute top-3 right-3 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-1 rounded-full shadow">
+                ✨ New
+              </div>
+            )}
+          </div>
+
+          {/* ── Body ── */}
+          <div className="p-4 flex flex-col flex-grow gap-2">
+
+            {/* Status Tag */}
+            <span className={`self-start text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 ${STATUS_STYLES[status]}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`}></span>
+              {status}
+            </span>
+
+            {/* Title */}
+            <h3 className="text-gray-900 font-bold text-lg leading-snug">{title}</h3>
+
+            {/* Location */}
+            <p className="text-gray-500 text-sm flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-brand-500 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              {location}, Gauteng
+            </p>
+
+            {/* Spacer */}
+            <div className="flex-grow" />
+
+            {/* WhatsApp Button */}
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`mt-2 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-200
+                ${status === 'Occupied'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'
+                  : 'bg-green-500 hover:bg-green-600 active:scale-95 text-white shadow-sm'
+                }`}
+              onClick={status === 'Occupied' ? (e) => e.preventDefault() : undefined}
+            >
+              {/* WhatsApp SVG Icon */}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              {status === 'Occupied' ? 'Not Available' : 'Chat on WhatsApp'}
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 9 — MAIN APP COMPONENT
+       Orchestrates all state, modals, filtering and rendering.
+    ═══════════════════════════════════════════════════════════ */
+    function App() {
+
+      /* ── Listings state — initialised from localStorage + seed ── */
+      const [rooms, setRooms] = React.useState(() => loadListings());
+
+      /* ── Filter state ── */
+      const [search,        setSearch]        = React.useState("");
+      const [maxPrice,      setMaxPrice]      = React.useState(30000);
+      const [onlyAvailable, setOnlyAvailable] = React.useState(false);
+
+      /* ── Auth state ── */
+      const [currentUser, setCurrentUser] = React.useState(() => getCurrentUser());
+
+      /* ── Modal visibility state ── */
+      const [showAuthModal,    setShowAuthModal]    = React.useState(false);
+      const [showAddModal,     setShowAddModal]     = React.useState(false);
+
+      /* ── Toast state ── */
+      const [toast, setToast] = React.useState(null);
+      // toast = { message: string, type: "success"|"error"|"info" } | null
+
+      /** Show a toast notification — auto-dismissed by Toast component */
+      const showToast = React.useCallback((message, type = "success") => {
+        setToast({ message, type });
+      }, []);
+
+      /** Called when user successfully logs in or signs up */
+      function handleAuthSuccess(user) {
+        setCurrentUser(user);
+        setShowAuthModal(false);
+      }
+
+      /** Logout — clears session and resets user state */
+      function handleLogout() {
+        logoutUser();
+        setCurrentUser(null);
+        showToast("You've been logged out. See you soon! 👋", "info");
+      }
+
+      /**
+       * handleAddListing(newListing)
+       * Called by AddListingModal on successful form submit.
+       * Uses addListing() from the data layer to update state + localStorage.
+       */
+      function handleAddListing(newListing) {
+        setRooms(prev => addListing(prev, newListing));
+      }
+
+      /**
+       * handleListRoomClick()
+       * If user is logged in → open Add Listing modal.
+       * If not → open Auth modal first, with a hint.
+       */
+      function handleListRoomClick() {
+        if (currentUser) {
+          setShowAddModal(true);
+        } else {
+          showToast("Please log in to list your room.", "info");
+          setShowAuthModal(true);
+        }
+      }
+
+      /* ── Derived: apply filterListings() from data layer ── */
+      const filtered = React.useMemo(() =>
+        filterListings(rooms, { search, maxPrice, onlyAvailable }),
+        [rooms, search, maxPrice, onlyAvailable]
+      );
+
+      /* ── Stats ── */
+      const availableCount = rooms.filter(r => r.status === "Available").length;
+
+      /* ════════════════════ RENDER ════════════════════ */
+      return (
+        <div className="min-h-screen bg-slate-100">
+
+          {/* ══ TOAST (rendered at root level so it floats above everything) ══ */}
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
+
+          {/* ══ AUTH MODAL ══ */}
+          {showAuthModal && (
+            <AuthModal
+              onClose={() => setShowAuthModal(false)}
+              onAuthSuccess={handleAuthSuccess}
+              showToast={showToast}
+            />
+          )}
+
+          {/* ══ ADD LISTING MODAL ══ */}
+          {showAddModal && (
+            <AddListingModal
+              onClose={() => setShowAddModal(false)}
+              onAdd={handleAddListing}
+              showToast={showToast}
+            />
+          )}
+
+          {/* ══════════════════ STICKY HEADER ══════════════════ */}
+          <header className="sticky top-0 z-50 bg-brand-700 shadow-lg">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
+
+              {/* Logo */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="bg-white rounded-lg p-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-700" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-white font-extrabold text-lg leading-none tracking-tight">
+                    Gauteng <span className="text-blue-300">Rooms</span>
+                  </h1>
+                  <p className="text-blue-300 text-xs">Gauteng's #1 Rental Marketplace</p>
+                </div>
+              </div>
+
+              {/* Right side — auth controls + list button */}
+              <div className="flex items-center gap-2 flex-wrap">
+
+                {/* Live Stats Pill */}
+                <div className="hidden sm:flex items-center gap-1.5 bg-brand-900 bg-opacity-60 px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-white text-xs font-medium">{availableCount} Available Now</span>
+                </div>
+
+                {/* ── Logged OUT: show Login / Sign Up buttons ── */}
+                {!currentUser && (
+                  <>
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="text-white text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl
+                        border border-blue-400 hover:bg-brand-600 transition"
+                    >
+                      Log In
+                    </button>
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="bg-white text-brand-700 text-xs sm:text-sm font-bold px-3 py-2
+                        rounded-xl hover:bg-blue-50 transition"
+                    >
+                      Sign Up
+                    </button>
+                  </>
+                )}
+
+                {/* ── Logged IN: show user email + logout ── */}
+                {currentUser && (
+                  <div className="flex items-center gap-2">
+                    {/* User pill */}
+                    <div className="hidden sm:flex items-center gap-1.5 bg-brand-900 bg-opacity-60
+                      px-3 py-1.5 rounded-full">
+                      <span className="text-emerald-400 text-xs">👤</span>
+                      <span className="text-white text-xs font-medium truncate max-w-[140px]">
+                        {currentUser.email}
+                      </span>
+                    </div>
+                    {/* Logout button */}
+                    <button
+                      onClick={handleLogout}
+                      className="text-blue-300 hover:text-white text-xs font-semibold px-3 py-2
+                        rounded-xl border border-blue-500 hover:border-blue-300 transition"
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                )}
+
+                {/* ── "+ List Your Room" button ── always visible ── */}
+                <button
+                  onClick={handleListRoomClick}
+                  className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400
+                    text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-xl
+                    transition-all active:scale-95 shadow-md shrink-0"
+                >
+                  <span className="text-base leading-none">+</span>
+                  <span>List Your Room</span>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* ══════════════════ HERO STRIP ══════════════════ */}
+          <div className="bg-gradient-to-r from-brand-900 to-brand-600 text-white py-8 px-4">
+            <div className="max-w-7xl mx-auto text-center">
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-1">
+                Find Your Perfect Room in Gauteng
+              </h2>
+              <p className="text-blue-200 text-sm sm:text-base">
+                Townships · Towns · Cities — from <strong>R1</strong> to <strong>R30,000/month</strong>
+              </p>
+            </div>
+          </div>
+
+          {/* ══════════════════ FILTER BAR ══════════════════ */}
+          <div className="sticky top-[60px] z-40 bg-white border-b border-slate-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center">
+
+              {/* 🔍 Search Input — now searches title + location */}
+              <div className="relative flex-1 min-w-[200px]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search by area or title e.g. Soweto, Loft..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300
+                    focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm text-gray-700 placeholder-gray-400"
+                />
+                {/* Clear search button */}
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              {/* 💰 Price Range Slider */}
+              <div className="flex flex-col gap-1 min-w-[220px] flex-1">
+                <div className="flex justify-between text-xs text-gray-500 font-medium">
+                  <span>Price: up to</span>
+                  <span className="text-brand-700 font-bold">{formatRand(maxPrice)}/mo</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={30000}
+                  step={100}
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  className="w-full accent-brand-600"
+                  style={{
+                    background: `linear-gradient(to right, #2563eb ${(maxPrice/30000)*100}%, #e2e8f0 ${(maxPrice/30000)*100}%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>R0</span>
+                  <span>R30,000</span>
+                </div>
+              </div>
+
+              {/* ✅ Available Only Toggle */}
+              <button
+                onClick={() => setOnlyAvailable(!onlyAvailable)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 shrink-0
+                  ${onlyAvailable
+                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-md'
+                    : 'bg-white text-gray-600 border-slate-300 hover:border-emerald-400 hover:text-emerald-600'
+                  }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${onlyAvailable ? 'bg-white' : 'bg-emerald-400'}`}></span>
+                Available Only
+              </button>
+            </div>
+          </div>
+
+          {/* ══════════════════ RESULTS COUNT ══════════════════ */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+            <p className="text-gray-500 text-sm">
+              Showing <span className="font-bold text-gray-800">{filtered.length}</span> listing{filtered.length !== 1 ? 's' : ''}
+              {search && <span> for <strong className="text-brand-600">"{search}"</strong></span>}
+              {onlyAvailable && <span className="ml-1 text-emerald-600 font-medium">· Available only</span>}
+            </p>
+          </div>
+
+          {/* ══════════════════ LISTINGS GRID ══════════════════ */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 pt-3">
+            {filtered.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filtered.map((room) => (
+                  <RoomCard key={room.id} room={room} />
+                ))}
+              </div>
+            ) : (
+              /* ── Empty State ── */
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="text-6xl mb-4">🏚️</div>
+                <h3 className="text-xl font-bold text-gray-700 mb-2">No rooms found</h3>
+                <p className="text-gray-400 text-sm max-w-xs">
+                  Try adjusting your search, increasing the price range, or removing the "Available Only" filter.
+                </p>
+                <button
+                  onClick={() => { setSearch(""); setMaxPrice(30000); setOnlyAvailable(false); }}
+                  className="mt-6 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            )}
+          </main>
+
+          {/* ══════════════════ FOOTER ══════════════════ */}
+          <footer className="bg-brand-900 text-blue-300 text-center py-6 text-xs">
+            <p className="font-semibold text-white mb-1">Gauteng Rooms 🏠</p>
+            <p>The trusted marketplace for rentals across Gauteng, South Africa.</p>
+            <p className="mt-1 text-blue-500">From townships to the city — we've got your room.</p>
+            {/* Show logged-in user in footer on mobile (where header truncates) */}
+            {currentUser && (
+              <p className="mt-2 text-emerald-400 font-medium">
+                Logged in as {currentUser.email}
+              </p>
+            )}
+          </footer>
+
+        </div>
+      );
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 10 — RENDER
+       Mount the React app into the #root div.
+    ═══════════════════════════════════════════════════════════ */
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+
+  </script>
+</body>
+</html>
